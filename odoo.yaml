@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odoo-bodega-deployment
+  labels:
+    app: odoo
+    client: bodega
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odoo
+      client: bodega
+  template:
+    metadata:
+      labels:
+        app: odoo
+        client: bodega
+    spec:
+      containers:
+      - name: odoo
+        image: docker.btg.com.pe/odoo:12.1.2
+        env:
+          - name: HOST
+            value: "127.0.0.1"
+          - name: USER
+            value: "odoo"
+          - name: PASSWORD
+            value: "odoo"
+        ports:
+        - containerPort: 8069
+        volumeMounts:
+        - name: nfs-configimagePullSecrets
+          mountPath: /etc/odoo
+        - name: nfs-data
+          mountPath: /var/lib/odoo
+        - name: nfs-addons
+          mountPath: /mnt/extra-addons
+
+      - name: postgres
+        image: postgres:10.4
+        env:
+          - name: POSTGRES_DB
+            value: "postgres"
+          - name: POSTGRES_USER
+            value: "odoo"
+          - name: POSTGRES_PASSWORD
+            value: "odoo"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgredb
+          mountPath: /var/lib/postgresql/data
+      imagePullSecrets:
+        - name: docker-credentials
+
+      volumes:
+       - name: nfs-config
+         persistentVolumeClaim:
+           claimName: pv0001
+       - name: nfs-data
+         persistentVolumeClaim:
+           claimName: pv0002
+       - name: nfs-addons
+         persistentVolumeClaim:
+           claimName: odoo-pvc
+       - name: postgredb
+         persistentVolumeClaim:
+           claimName: odoo-db-pvc
